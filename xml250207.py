@@ -246,7 +246,7 @@ def create_pdf(data, output_file):
                 Paragraph(shipment_info, styles["Normal"]),
             ]
         ],
-        colWidths=[260, 260],  # Adjust column widths as needed
+        colWidths=[280, 280],  # Adjust column widths as needed
     )
     invoice_shipment_table.setStyle(
         TableStyle(
@@ -288,7 +288,7 @@ def create_pdf(data, output_file):
                 Paragraph(buyer_info, styles["Normal"]),
             ]
         ],
-        colWidths=[260, 260],  # Adjust column widths as needed
+        colWidths=[280, 280],  # Adjust column widths as needed
     )
     seller_buyer_table.setStyle(
         TableStyle(
@@ -299,14 +299,14 @@ def create_pdf(data, output_file):
                     (0, 0),
                     (-1, 0),
                     1,
-                    colors.black,
+                    colors.white,
                 ),  # Add a line below for separation
             ]
         )
     )
 
     elements.append(seller_buyer_table)
-    elements.append(Spacer(1, 12))
+    elements.append(Spacer(1, 20))
 
     # Product Table
     table_data = [
@@ -330,7 +330,7 @@ def create_pdf(data, output_file):
             ]
         )
 
-    table = Table(table_data, colWidths=[60, 310, 50, 70, 80])
+    table = Table(table_data, colWidths=[40, 310, 50, 70, 80])
     table.setStyle(
         TableStyle(
             [
