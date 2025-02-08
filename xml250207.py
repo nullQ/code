@@ -334,12 +334,12 @@ def create_pdf(data, output_file):
     table.setStyle(
         TableStyle(
             [
-                ("BACKGROUND", (0, 0), (-1, 0), colors.lightblue),
-                ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+                ("BACKGROUND", (0, 0), (-1, 0), colors.white),
+                ("TEXTCOLOR", (0, 0), (-1, 0), colors.black),
                 ("ALIGN", (0, 0), (-1, -1), "CENTER"),
                 ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
                 ("BOTTOMPADDING", (0, 0), (-1, 0), 12),
-                ("BACKGROUND", (0, 1), (-1, -1), colors.whitesmoke),
+                ("BACKGROUND", (0, 1), (-1, -1), colors.white),
                 ("GRID", (0, 0), (-1, -1), 1, colors.black),
             ]
         )
