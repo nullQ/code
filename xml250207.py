@@ -52,6 +52,31 @@ def extract_data(tree):
     invoice_data["PaymentTerms"] = tree.findtext(
         ".//ram:SpecifiedTradePaymentTerms/ram:Description", namespaces=namespaces
     )
+    invoice_data["Currency"] = tree.findtext(
+        ".//ram:InvoiceCurrencyCode", namespaces=namespaces
+    )
+    # shipment details
+
+    shipment = tree.find(".//ram:ShipToTradeParty", namespaces=namespaces)
+    invoice_data["shipment"] = {
+        "date": shipment.findtext(
+            ".//ram:ActualDeliverySupplyChainEvent/udt:DateTimeString",
+            namespaces=namespaces,
+        ),
+        "Name": shipment.findtext("ram:Name", namespaces=namespaces),
+        "LineOne": shipment.findtext(
+            "ram:PostalTradeAddress/ram:LineOne", namespaces=namespaces
+        ),
+        "PostcodeCode": shipment.findtext(
+            "ram:PostalTradeAddress/ram:PostcodeCode", namespaces=namespaces
+        ),
+        "CityName": shipment.findtext(
+            "ram:PostalTradeAddress/ram:CityName", namespaces=namespaces
+        ),
+        "CountryID": shipment.findtext(
+            "ram:PostalTradeAddress/ram:CountryID", namespaces=namespaces
+        ),
+    }
 
     # Extract seller and buyer details
     seller = tree.find(".//ram:SellerTradeParty", namespaces=namespaces)
@@ -128,7 +153,24 @@ def extract_data(tree):
     invoice_data["total"] = totals.findtext(
         "ram:GrandTotalAmount", namespaces=namespaces
     )
-   
+
+    # Transfer_info
+    Transfer = tree.find(
+        ".//ram:SpecifiedTradeSettlementPaymentMeans", namespaces=namespaces
+    )
+    invoice_data["Transfer"] = {
+        "AccountName": Transfer.findtext(
+            "ram:PayeePartyCreditorFinancialAccount/ram:AccountName",
+            namespaces=namespaces,
+        ),
+        "IBANID": Transfer.findtext(
+            "ram:PayeePartyCreditorFinancialAccount/ram:IBANID", namespaces=namespaces
+        ),
+        "BICID": Transfer.findtext(
+            "ram:PayeeSpecifiedCreditorFinancialInstitution/ram:BICID",
+            namespaces=namespaces,
+        ),
+    }
 
     return invoice_data
 
@@ -178,12 +220,50 @@ def create_pdf(data, output_file):
     # Invoice Information
     invoice_info = f"""
     <b>Invoice number:</b> {data['invoice_number']}<br/>
-    <b>Date:</b> {data['invoice_date']}<br/>
+    <b>Place  Date:</b> {data['invoice_date']}<br/>
     <b>Due date:</b> {data['due_date']}<br/>
     <b>Purchase order:</b> {data['purchase_order']}<br/>
     <b>BuyerReference:</b> {data['BuyerReference']}<br/>
+     <b>Currency:</b> {data['Currency']}<br/>
+    
     """
-    elements.append(Paragraph(invoice_info, styles["Normal"]))
+
+    # shipment information
+    shipment_info = f"""
+    <b>Date of delivery:</b>{data['shipment']['date']}<br/>
+    <b>{data['shipment']['Name']}</b><br/>
+    <b>Street/house Nr.:</b> {data['shipment']['LineOne']}<br/>
+    <b>Code      postal:</b> {data['shipment']['PostcodeCode']}<br/>
+    <b>Place :</b>{data['shipment']['CityName']}<br/>
+     <b>Country :</b>{data['shipment']['CountryID']}<br/>
+    """
+
+    # invoice_shipment_table
+    invoice_shipment_table = Table(
+        [
+            [
+                Paragraph(invoice_info, styles["Normal"]),
+                Paragraph(shipment_info, styles["Normal"]),
+            ]
+        ],
+        colWidths=[260, 260],  # Adjust column widths as needed
+    )
+    invoice_shipment_table.setStyle(
+        TableStyle(
+            [
+                ("VALIGN", (0, 0), (-1, -1), "TOP"),  # Align content to the top
+                (
+                    "LINEBELOW",
+                    (0, 0),
+                    (-1, 0),
+                    1,
+                    colors.white,
+                ),  # Add a line below for separation
+            ]
+        )
+    )
+
+    elements.append(invoice_shipment_table)
     elements.append(Spacer(1, 12))
 
     # Seller and Buyer Information
@@ -232,7 +312,6 @@ def create_pdf(data, output_file):
     table_data = [
         [
             "LineID",
-            "SellerAssignedID",
             "model and Description",
             "Quantity",
             "Unit Price",
@@ -240,13 +319,10 @@ def create_pdf(data, output_file):
         ]
     ]
     for product in data["products"]:
-        model_and_description = (
-            f"{product['model']}<br/>{product['description']}<br/>{product['Content']}"
-        )
+        model_and_description = f"{product['model']}<br/>{product['description']}<br/>{product['Content']}<BR/>{product["SellerAssignedID"]}"
         table_data.append(
             [
                 Paragraph(str(product["LineID"]), styles["Normal"]),
-                Paragraph(str(product["SellerAssignedID"]), styles["Normal"]),
                 Paragraph(model_and_description, styles["Normal"]),
                 Paragraph(str(product["quantity"]), styles["Normal"]),
                 Paragraph(f"{product['unit_price']} EUR", styles["Normal"]),
@@ -254,7 +330,7 @@ def create_pdf(data, output_file):
             ]
         )
 
-    table = Table(table_data, colWidths=[60, 100, 210, 50, 70, 80])
+    table = Table(table_data, colWidths=[60, 310, 50, 70, 80])
     table.setStyle(
         TableStyle(
             [
@@ -281,14 +357,16 @@ def create_pdf(data, output_file):
     elements.append(Spacer(1, 12))
 
     # Payment Information
-    payment_info1= f"""
-    <b>payment:</b> {data['PaymentTerms']} <br/>
+    payment_info1 = f"""
+    <b>payment:</b> {data['PaymentTerms']} <br/><br/>
+    <b>Account:</b> {data['Transfer']['AccountName']} <br/>
+    <b>IBAN :</b> {data['Transfer']['IBANID']} <br/>
+    <b>BIC:</b>  {data['Transfer']['BICID']} <br/>
+    
    
     """
     elements.append(Paragraph(payment_info1, styles["Normal"]))
-    payment_info = "Bank transfer to IBAN: DE67 7524 0000 0712 3557 00"
-    elements.append(Paragraph(payment_info, styles["Normal"]))
-   
+
     # Build PDF
     doc.build(elements)
 
