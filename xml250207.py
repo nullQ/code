@@ -58,7 +58,19 @@ def extract_data(tree):
     # shipment details
 
     shipment = tree.find(".//ram:ShipToTradeParty", namespaces=namespaces)
-    invoice_data["shipment"] = {
+    if shipment is None:
+        print("XML文件中未找到ram:ShipToTradeParty节点")
+        invoice_data["shipment"] = {
+        "date": "",
+        "Name": "",
+        "LineOne": "",
+        "PostcodeCode": "",
+        "CityName": "",
+        "CountryID": "",
+    }
+
+    else:
+        invoice_data["shipment"] = {
         "date": shipment.findtext(
             ".//ram:ActualDeliverySupplyChainEvent/udt:DateTimeString",
             namespaces=namespaces,
@@ -77,6 +89,8 @@ def extract_data(tree):
             "ram:PostalTradeAddress/ram:CountryID", namespaces=namespaces
         ),
     }
+        
+    
 
     # Extract seller and buyer details
     seller = tree.find(".//ram:SellerTradeParty", namespaces=namespaces)
@@ -373,8 +387,8 @@ def create_pdf(data, output_file):
 
 # Main function
 def main():
-    xml_file = "GRG1242416.xml"
-    output_file = "invoice_output1.pdf"
+    xml_file = "test.xml"
+    output_file = "invoice_output3.pdf"
 
     tree = parse_xml(xml_file)
     data = extract_data(tree)
